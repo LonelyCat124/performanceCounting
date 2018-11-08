@@ -79,16 +79,20 @@ int main(){
   pe2[i].exclude_kernel=1;
   pe2[i].exclude_hv=1;
   
-  pe3[i].type == PERF_TYPE_RAW;
-  pfm_get_perf_event_encoding("OFFCORE_REQUESTS:L3_MISS_DEMAND_DATA_RD",PFM_PLM3,&pe3[i],NULL,NULL );
+  pe3[i].type = PERF_TYPE_HARDWARE;
+//  pe3[i].type = PERF_TYPE_RAW;
+//  pfm_get_perf_event_encoding("OFFCORE_REQUESTS:L3_MISS_DEMAND_DATA_RD",PFM_PLM3,&pe3[i],NULL,NULL );
+  pe3[i].config = PERF_COUNT_HW_CPU_CYCLES; 
   pe3[i].size = sizeof(struct perf_event_attr);
   pe3[i].disabled =1;
   pe3[i].exclude_kernel=1;
   pe3[i].exclude_hv=1;
 
-  pe4[i].type == PERF_TYPE_RAW;
+/*  pe4[i].type = PERF_TYPE_RAW;
   int x = pfm_get_perf_event_encoding("OFFCORE_RESPONSE_0:DMND_DATA_RD:L3_MISS_LOCAL:SNP_ANY",PFM_PLM3,&pe4[i],NULL,NULL);
-  if(x != PFM_SUCCESS) printf("%s\n", pfm_strerror(x));
+  if(x != PFM_SUCCESS) printf("%s\n", pfm_strerror(x));*/
+  pe4[i].type = PERF_TYPE_HARDWARE;
+  pe4[i].type = PERF_COUNT_HW_CACHE_MISSES;
   pe4[i].size = sizeof(struct perf_event_attr);
   pe4[i].disabled =1;
   pe4[i].exclude_kernel=1;
@@ -112,7 +116,7 @@ int main(){
     cpu_set_t cpuset;
     int core_id = omp_get_thread_num();
     pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
-    if(CPU_COUNT(&cpuset) > 1) printf("Affinity not set\n");
+    if(CPU_COUNT(&cpuset) > 1) printf("Affinity not set, thread assigned to %i cores\n", CPU_COUNT(&cpuset));
     for(int i = 0; i < CPUS; i++){
       if(CPU_ISSET(i, &cpuset)){
         core_id = i;
@@ -146,24 +150,41 @@ int main(){
       exit(EXIT_FAILURE);
     }
     printf("Setup %i\n", omp_get_thread_num());
-    ioctl(handles[core_id],PERF_EVENT_IOC_ENABLE,0);
-    ioctl(handles2[core_id],PERF_EVENT_IOC_ENABLE,0);
-    ioctl(handles3[core_id],PERF_EVENT_IOC_ENABLE,0);
-    ioctl(handles4[core_id],PERF_EVENT_IOC_ENABLE,0);
+    if( ioctl(handles[core_id],PERF_EVENT_IOC_ENABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    if( ioctl(handles2[core_id],PERF_EVENT_IOC_ENABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    if( ioctl(handles3[core_id],PERF_EVENT_IOC_ENABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    if( ioctl(handles4[core_id],PERF_EVENT_IOC_ENABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
     #pragma omp for simd schedule(static) aligned(array:32)
 //    #pragma omp for schedule(dynamic, 32)
     for(int i = 0; i < N; i++){
       array[i] = array[i] + 1;
     }
-    ioctl(handles[core_id],PERF_EVENT_IOC_DISABLE,0);
-    ioctl(handles2[core_id],PERF_EVENT_IOC_DISABLE,0);
-    ioctl(handles3[core_id],PERF_EVENT_IOC_DISABLE,0);
-    ioctl(handles4[core_id],PERF_EVENT_IOC_DISABLE,0);
+    if( ioctl(handles[core_id],PERF_EVENT_IOC_DISABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    if( ioctl(handles2[core_id],PERF_EVENT_IOC_DISABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    if( ioctl(handles3[core_id],PERF_EVENT_IOC_DISABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
+    if( ioctl(handles4[core_id],PERF_EVENT_IOC_DISABLE,0) == -1) {
+      exit(EXIT_FAILURE);
+    }
     long long count=-1, count2=-1,count3=-1, count4=-1;
     ssize_t z = read(handles[core_id], &count, sizeof(long long));
     ssize_t z2 = read(handles2[core_id], &count2, sizeof(long long));
     ssize_t z3 = read(handles3[core_id], &count3, sizeof(long long));
     ssize_t z4 = read(handles4[core_id], &count4, sizeof(long long));
+    if(z * z2 * z3 * z4 < 0) printf("error in reading files from thread %i\n", omp_get_thread_num());
     for(int i = 0; i < omp_get_num_threads(); i++){
       #pragma omp barrier
       if(i == omp_get_thread_num())
