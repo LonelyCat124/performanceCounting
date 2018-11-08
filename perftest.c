@@ -86,7 +86,7 @@ int main(){
   pe3[i].exclude_kernel=1;
   pe3[i].exclude_hv=1;
 
-  pe4[i].type == PERF_TYPE_RAW
+  pe4[i].type == PERF_TYPE_RAW;
   int x = pfm_get_perf_event_encoding("OFFCORE_RESPONSE_0:DMND_DATA_RD:L3_MISS_LOCAL:SNP_ANY",PFM_PLM3,&pe4[i],NULL,NULL);
   if(x != PFM_SUCCESS) printf("%s\n", pfm_strerror(x));
   pe4[i].size = sizeof(struct perf_event_attr);
@@ -167,7 +167,7 @@ int main(){
     for(int i = 0; i < omp_get_num_threads(); i++){
       #pragma omp barrier
       if(i == omp_get_thread_num())
-        printf("%i %i: %lli %lli %lli %lli \n",omp_get_thread_num() core_id, count, count2, count3, count4);
+        printf("%i %i: %lli %lli %lli %lli \n",omp_get_thread_num(), core_id, count, count2, count3, count4);
     }
   }
   _mm_free(array);
