@@ -124,7 +124,7 @@ int main(){
       }
     }
     for(int i = 0; i < omp_get_num_threads(); i++){
-      if(i == omp_get_thread_num()){
+//      if(i == omp_get_thread_num()){
         handles[core_id] = perf_event_open_mine(&pe[core_id],0,core_id,-1,0);
         handles2[core_id] = perf_event_open_mine(&pe2[core_id],0,core_id,-1,0);
         handles3[core_id] = perf_event_open_mine(&pe3[core_id],0,core_id,-1,0);
@@ -134,8 +134,8 @@ int main(){
           fprintf(stderr,"error opening %i %i\n", core_id,errno);
           exit(EXIT_FAILURE);
         }
-      }
-    #pragma omp barrier
+//      }
+//    #pragma omp barrier
     }
     if( ioctl(handles[core_id],PERF_EVENT_IOC_RESET,0) == -1){
       exit(EXIT_FAILURE);
